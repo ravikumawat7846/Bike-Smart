@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="hi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BikeSmart AI - Compare Bikes, Superbikes & Nearby Dealer Prices</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#fff1f2',
+                            100: '#ffe4e6',
+                            500: '#f43f5e',
+                            600: '#e11d48',
+                            700: '#be123c',
+                        },
+                        superbike: {
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .gradient-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+        }
+        .superbike-glow {
+            box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.3);
+        }
+        .deal-glow {
+            box-shadow: 0 0 20px -5px rgba(225, 29, 72, 0.4);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between text-slate-100">
+
+    <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur-md sticky top-0 z-40 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-tr from-rose-600 to-amber-500 p-2.5 rounded-xl text-white shadow-lg shadow-rose-600/30">
+                    <i class="fa-solid fa-motorcycle text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-rose-400 via-amber-300 to-cyan-400 bg-clip-text text-transparent">
+                        BikeSmart <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 ml-1">AI Finder</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Aapke Budget me Sabse Best Bike, Superbike & Dealer Deals</p>
+                </div>
+            </div>
+
+            <!-- Location Selector & GPS -->
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <div class="relative w-full sm:w-64">
+                    <i class="fa-solid fa-location-dot absolute left-3 top-3 text-rose-500 text-sm"></i>
+                    <select id="locationSelect" onchange="updateLocation()" class="w-full bg-slate-800 border border-slate-700 text-xs text-slate-200 pl-8 pr-4 py-2.5 rounded-xl focus:outline-none focus:border-rose-500 transition cursor-pointer">
+                        <option value="Jaipur">Jaipur, Rajasthan</option>
+                        <option value="Delhi NCR">Delhi NCR</option>
+                        <option value="Mumbai">Mumbai, Maharashtra</option>
+                        <option value="Bangalore">Bangalore, Karnataka</option>
+                        <option value="Pune">Pune, Maharashtra</option>
+                        <option value="Hyderabad">Hyderabad, Telangana</option>
+                        <option value="Ahmedabad">Ahmedabad, Gujarat</option>
+                    </select>
+                </div>
+                <button onclick="detectGPSLocation()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-rose-400 p-2.5 rounded-xl transition flex items-center justify-center shrink-0" title="Detect GPS Location">
+                    <i class="fa-solid fa-crosshairs text-sm"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6 w-full flex-grow">
+
+        <!-- Budget & Type Filter Bar -->
+        <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-2xl backdrop-blur">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+
+                <!-- Budget Slider -->
+                <div class="lg:col-span-6 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-indian-rupee-sign text-amber-400"></i> Max Budget (Aapka Budget):
+                        </label>
+                        <span id="budgetDisplay" class="text-lg font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-0.5 rounded-lg">
+                            ₹ 12.00 Lakhs
+                        </span>
+                    </div>
+                    <input type="range" id="budgetRange" min="70000" max="3500000" step="10000" value="1200000" oninput="onBudgetChange()" class="w-full accent-rose-500 h-2 bg-slate-800 rounded-lg cursor-pointer">
+                    <div class="flex justify-between text-[11px] text-slate-400">
+                        <span>₹70K (Commuter)</span>
+                        <span>₹3 Lakhs (Sports)</span>
+                        <span>₹10 Lakhs (Mid Superbike)</span>
+                        <span>₹35 Lakhs (Top Superbike)</span>
+                    </div>
+                </div>
+
+                <!-- Category Pills -->
+                <div class="lg:col-span-6 space-y-2">
+                    <label class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-cyan-400"></i> Bike Category:
+                    </label>
+                    <div class="flex flex-wrap gap-2" id="categoryContainer">
+                        <!-- Loaded dynamically via JS -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Additional Quick Search Options -->
+            <div class="mt-4 pt-4 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
+                <div class="flex items-center gap-4">
+                    <span class="font-medium text-slate-300"><i class="fa-solid fa-sliders text-rose-400 mr-1"></i> Quick Filter:</span>
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" id="superbikeOnly" onchange="applyFilters()" class="rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-0">
+                        <span class="text-cyan-300 font-medium">Sirf Superbikes / Performance Bikes</span>
+                    </label>
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" id="highMileage" onchange="applyFilters()" class="rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0">
+                        <span>High Mileage (> 35 kmpl)</span>
+                    </label>
+                </div>
+                <div id="resultCountBadge" class="text-slate-400 font-medium">
+                    Showing 0 bikes
+                </div>
+            </div>
+        </section>
+
+        <section id="aiHighlightsSection" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Best Overall Card -->
+            <div class="gradient-card border border-amber-500/30 rounded-2xl p-5 relative overflow-hidden deal-glow">
+                <div class="absolute -right-6 -bottom-6 opacity-10 text-amber-500 pointer-events-none text-9xl">
+                    <i class="fa-solid fa-crown"></i>
+                </div>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="bg-amber-500/20 text-amber-300 text-xs font-bold px-2.5 py-1 rounded-full border border-amber-500/40 uppercase tracking-wide">
+                        <i class="fa-solid fa-star mr-1"></i> Best Value in Budget
+                    </span>
+                    <span id="overallCategoryBadge" class="text-xs text-slate-400">--</span>
+                </div>
+                <h3 id="bestOverallTitle" class="text-xl font-extrabold text-white mb-1">Select Budget...</h3>
+                <p id="bestOverallDesc" class="text-xs text-slate-300 mb-3">Loading recommendation...</p>
+                <div class="flex items-center justify-between border-t border-slate-800 pt-3 text-xs">
+                    <div>
+                        <span class="text-slate-400 block">Ex-Showroom Price:</span>
+                        <span id="bestOverallPrice" class="text-lg font-bold text-amber-400">₹0</span>
+                    </div>
+                    <button id="bestOverallBtn" onclick="" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl transition text-xs flex items-center gap-1.5">
+                        <i class="fa-solid fa-shop"></i> Best Price Shop
+                    </button>
+                </div>
+            </div>
+
+            <!-- Best Superbike Card -->
+            <div class="gradient-card border border-cyan-500/40 rounded-2xl p-5 relative overflow-hidden superbike-glow">
+                <div class="absolute -right-6 -bottom-6 opacity-10 text-cyan-400 pointer-events-none text-9xl">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="bg-cyan-500/20 text-cyan-300 text-xs font-bold px-2.5 py-1 rounded-full border border-cyan-500/40 uppercase tracking-wide">
+                        <i class="fa-solid fa-gauge-high mr-1"></i> Best Superbike in Budget
+                    </span>
+                    <span id="superbikeCategoryBadge" class="text-xs text-slate-400">--</span>
+                </div>
+                <h3 id="bestSuperbikeTitle" class="text-xl font-extrabold text-white mb-1">Select Budget...</h3>
+                <p id="bestSuperbikeDesc" class="text-xs text-slate-300 mb-3">Loading superbike recommendation...</p>
+                <div class="flex items-center justify-between border-t border-slate-800 pt-3 text-xs">
+                    <div>
+                        <span class="text-slate-400 block">Top Speed & Power:</span>
+                        <span id="bestSuperbikeSpecs" class="text-sm font-bold text-cyan-300">0 km/h | 0 BHP</span>
+                    </div>
+                    <button id="bestSuperbikeBtn" onclick="" class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold px-4 py-2 rounded-xl transition text-xs flex items-center gap-1.5">
+                        <i class="fa-solid fa-shop"></i> Best Price Shop
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-rose-500"></i> Available Bikes in Your Budget
+                </h2>
+                <div class="flex items-center gap-2 text-xs">
+                    <span class="text-slate-400">Sort By:</span>
+                    <select id="sortBySelect" onchange="applyFilters()" class="bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none">
+                        <option value="price-asc">Price: Low to High</option>
+                        <option value="price-desc">Price: High to Low</option>
+                        <option value="power-desc">Max Power (BHP)</option>
+                        <option value="mileage-desc">Highest Mileage</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Bikes Container -->
+            <div id="bikesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- Dynamically Populated -->
+            </div>
+        </section>
+
+    </main>
+
+    <div id="compareBar" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 border border-slate-700 shadow-2xl rounded-2xl px-5 py-3 flex items-center justify-between gap-4 w-11/12 max-w-2xl hidden backdrop-blur-lg">
+        <div class="flex items-center gap-3 overflow-x-auto" id="compareBadges">
+            <span class="text-xs text-slate-400 font-semibold uppercase">Compare (Max 3):</span>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+            <button onclick="clearCompare()" class="text-xs text-slate-400 hover:text-white px-2 py-1">Clear</button>
+            <button onclick="openCompareModal()" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-lg transition flex items-center gap-1.5">
+                <i class="fa-solid fa-code-compare"></i> Compare Now
+            </button>
+        </div>
+    </div>
+
+    <div id="dealerModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <!-- Modal Header -->
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+                <div class="flex items-center gap-3">
+                    <div class="bg-rose-500/20 text-rose-400 p-2 rounded-xl border border-rose-500/30">
+                        <i class="fa-solid fa-store text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 id="dealerModalBikeName" class="text-base font-bold text-white">Bike Name Dealers</h3>
+                        <p id="dealerModalLocation" class="text-xs text-slate-400">Nearest authorized showrooms in Jaipur</p>
+                    </div>
+                </div>
+                <button onclick="closeDealerModal()" class="text-slate-400 hover:text-white text-xl p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- On-Road Cost Estimate Banner -->
+            <div class="p-4 bg-slate-800/60 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div>
+                    <span class="text-slate-400 block">Ex-Showroom Price:</span>
+                    <span id="modalExShowroom" class="text-sm font-bold text-slate-200">₹0</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block">+ RTO & Insurance (Approx):</span>
+                    <span id="modalRTOInsurance" class="text-sm font-bold text-slate-300">₹0</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block">Est. On-Road Price:</span>
+                    <span id="modalOnRoad" class="text-base font-extrabold text-amber-400">₹0</span>
+                </div>
+            </div>
+
+            <!-- Dealer List -->
+            <div id="dealerListContainer" class="p-4 space-y-3 overflow-y-auto custom-scrollbar flex-grow">
+                <!-- Dynamically populated -->
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-3 border-t border-slate-800 bg-slate-950/60 text-center text-xs text-slate-400">
+                <i class="fa-solid fa-shield-halved text-emerald-400 mr-1"></i> Best price quotes verified by local authorized dealerships. Prices may vary slightly with accessories.
+            </div>
+        </div>
+    </div>
+
+    <div id="compareModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-code-compare text-rose-500 text-lg"></i>
+                    <h3 class="text-base font-bold text-white">Side-by-Side Bike Comparison</h3>
+                </div>
+                <button onclick="closeCompareModal()" class="text-slate-400 hover:text-white text-xl p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Comparison Matrix Content -->
+            <div id="compareMatrixContainer" class="p-4 overflow-x-auto overflow-y-auto custom-scrollbar">
+                <!-- Populated via JS -->
+            </div>
+        </div>
+    </div>
+
+    <footer class="border-t border-slate-800 bg-slate-900/60 mt-12 py-6 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 space-y-2">
+            <p>BikeSmart AI &copy; 2026 - Find the best bikes, superbikes, mileage & prices across top Indian cities.</p>
+            <p class="text-[11px] text-slate-600">Disclaimers: Prices shown are estimated ex-showroom & on-road costs. Actual dealership discount may vary based on stock and seasonal offers.</p>
+        </div>
+    </footer>
+
+    <script>
+        const bikesDatabase = [
+            // Commuters & Budget Bikes
+            {
+                id: 'splendor-plus',
+                name: 'Hero Splendor Plus XTEC',
+                brand: 'Hero',
+                category: 'Commuter',
+                price: 79900,
+                engineCc: 97.2,
+                powerBhp: 7.9,
+                topSpeedKmh: 87,
+                mileageKmpl: 70,
+                isSuperbike: false,
+                imageEmoji: '🏍️',
+                bgColor: 'from-blue-900/40 to-slate-900',
+                features: ['Digital Console', 'Bluetooth Connectivity', 'i3S Technology', 'Super Low Maintenance']
+            },
+            {
+                id: 'shine-125',
+                name: 'Honda Shine 125',
+                brand: 'Honda',
+                category: 'Commuter',
+                price: 82500,
+                engineCc: 123.9,
+                powerBhp: 10.7,
+                topSpeedKmh: 93,
+                mileageKmpl: 65,
+                isSuperbike: false,
+                imageEmoji: '🛵',
+                bgColor: 'from-emerald-900/40 to-slate-900',
+                features: ['Silent Start with ACG', '5-Speed Gearbox', 'eSP Technology', 'Smooth Engine']
+            },
+            {
+                id: 'pulsar-n160',
+                name: 'Bajaj Pulsar N160',
+                brand: 'Bajaj',
+                category: 'Street',
+                price: 130500,
+                engineCc: 164.82,
+                powerBhp: 15.68,
+                topSpeedKmh: 115,
+                mileageKmpl: 48,
+                isSuperbike: false,
+                imageEmoji: '🏍️',
+                bgColor: 'from-indigo-900/40 to-slate-900',
+                features: ['Dual-Channel ABS', 'Projector Headlamp', 'USB Charging', 'Underbelly Exhaust']
+            },
+            {
+                id: 'apache-rtr-200',
+                name: 'TVS Apache RTR 200 4V',
+                brand: 'TVS',
+                category: 'Sports',
+                price: 147800,
+                engineCc: 197.75,
+                powerBhp: 20.82,
+                topSpeedKmh: 127,
+                mileageKmpl: 40,
+                isSuperbike: false,
+                imageEmoji: '🏁',
+                bgColor: 'from-rose-900/40 to-slate-900',
+                features: ['3 Riding Modes', 'Adjustable Suspension', 'SmartXonnect Telematics', 'Slipper Clutch']
+            },
+            {
+                id: 'hunter-350',
+                name: 'Royal Enfield Hunter 350',
+                brand: 'Royal Enfield',
+                category: 'Cruiser',
+                price: 149900,
+                engineCc: 349.34,
+                powerBhp: 20.2,
+                topSpeedKmh: 114,
+                mileageKmpl: 36,
+                isSuperbike: false,
+                imageEmoji: '🛵',
+                bgColor: 'from-amber-900/40 to-slate-900',
+                features: ['Retro Roadster Styling', 'J-Series Engine', 'Lightweight Handling', 'Dual Channel ABS']
+            },
+
+            // Mid Range & Entry Sports / Performance Bikes
+            {
+                id: 'speed-400',
+                name: 'Triumph Speed 400',
+                brand: 'Triumph',
+                category: 'Roadster',
+                price: 234000,
+                engineCc: 398.15,
+                powerBhp: 39.5,
+                topSpeedKmh: 145,
+                mileageKmpl: 29,
+                isSuperbike: false,
+                imageEmoji: '🏍️',
+                bgColor: 'from-purple-900/40 to-slate-900',
+                features: ['Liquid Cooled Engine', 'Traction Control', 'Ride-by-wire', 'Premium Fit & Finish']
+            },
+            {
+                id: 'duke-390',
+                name: 'KTM Duke 390 (3rd Gen)',
+                brand: 'KTM',
+                category: 'Street',
+                price: 311000,
+                engineCc: 398.7,
+                powerBhp: 45.3,
+                topSpeedKmh: 167,
+                mileageKmpl: 25,
+                isSuperbike: true, // Entry Superbike class
+                imageEmoji: '⚡',
+                bgColor: 'from-orange-900/40 to-slate-900',
+                features: ['Launch Control', 'Cornering ABS', 'TFT Display with Nav', 'Quickshifter+']
+            },
+            {
+                id: 'ninja-300',
+                name: 'Kawasaki Ninja 300',
+                brand: 'Kawasaki',
+                category: 'Sports',
+                price: 343000,
+                engineCc: 296,
+                powerBhp: 38.4,
+                topSpeedKmh: 160,
+                mileageKmpl: 26,
+                isSuperbike: true,
+                imageEmoji: '🥷',
+                bgColor: 'from-emerald-900/50 to-slate-900',
+                features: ['Parallel Twin Engine', 'Slipper Clutch', 'Supersport Ergonomics', 'Dual Throttle Valves']
+            },
+            {
+                id: 'super-meteor-650',
+                name: 'Royal Enfield Super Meteor 650',
+                brand: 'Royal Enfield',
+                category: 'Cruiser',
+                price: 363000,
+                engineCc: 648,
+                powerBhp: 47,
+                topSpeedKmh: 160,
+                mileageKmpl: 22,
+                isSuperbike: true,
+                imageEmoji: '🛣️',
+                bgColor: 'from-amber-900/50 to-slate-900',
+                features: ['650cc Twin Engine', 'Showa USD Forks', 'Full LED Headlamp', 'Tripper Navigation']
+            },
+
+            // Superbikes Category (Middleweight & Liter Class)
+            {
+                id: 'ninja-zx4rr',
+                name: 'Kawasaki Ninja ZX-4RR',
+                brand: 'Kawasaki',
+                category: 'Sports',
+                price: 910000,
+                engineCc: 399,
+                powerBhp: 76.4,
+                topSpeedKmh: 230,
+                mileageKmpl: 18,
+                isSuperbike: true,
+                imageEmoji: '🚀',
+                bgColor: 'from-green-900/60 to-slate-900',
+                features: ['Inline 4 Cylinder Engine', '15,000+ RPM Redline', 'KTRC Traction Control', 'Showa BFRF Lite Rear Shock']
+            },
+            {
+                id: 'kawasaki-z900',
+                name: 'Kawasaki Z900',
+                brand: 'Kawasaki',
+                category: 'Street',
+                price: 938000,
+                engineCc: 948,
+                powerBhp: 123.6,
+                topSpeedKmh: 240,
+                mileageKmpl: 17,
+                isSuperbike: true,
+                imageEmoji: '👹',
+                bgColor: 'from-cyan-900/60 to-slate-900',
+                features: ['948cc Inline 4 Engine', 'Power Mode Selection', 'Sugomi Design', 'TFT Color Instrumentation']
+            },
+            {
+                id: 'triumph-street-triple-rs',
+                name: 'Triumph Street Triple 765 RS',
+                brand: 'Triumph',
+                category: 'Street',
+                price: 1181000,
+                engineCc: 765,
+                powerBhp: 128.2,
+                topSpeedKmh: 245,
+                mileageKmpl: 18,
+                isSuperbike: true,
+                imageEmoji: '🔥',
+                bgColor: 'from-rose-900/60 to-slate-900',
+                features: ['Moto2 Engine Tech', 'Brembo Stylema Brakes', 'Ohlins Rear Shock', 'IMU Cornering ABS']
+            },
+            {
+                id: 'suzuki-hayabusa',
+                name: 'Suzuki Hayabusa 1300',
+                brand: 'Suzuki',
+                category: 'Sports',
+                price: 1690000,
+                engineCc: 1340,
+                powerBhp: 187.3,
+                topSpeedKmh: 299,
+                mileageKmpl: 13,
+                isSuperbike: true,
+                imageEmoji: '🦅',
+                bgColor: 'from-indigo-900/60 to-slate-900',
+                features: ['Ultimate Sportbike Legend', 'Motion Track Brake System', 'Bi-directional Quickshifter', 'Launch Control']
+            },
+            {
+                id: 'bmw-s1000rr',
+                name: 'BMW S1000RR Superbike',
+                brand: 'BMW Motorrad',
+                category: 'Sports',
+                price: 2075000,
+                engineCc: 999,
+                powerBhp: 206.5,
+                topSpeedKmh: 303,
+                mileageKmpl: 14,
+                isSuperbike: true,
+                imageEmoji: '⚡',
+                bgColor: 'from-blue-900/70 to-slate-900',
+                features: ['ShiftCam Inline 4 Engine', 'Winglets for Downforce', 'Dynamic Traction Control', 'Race ABS Pro']
+            },
+            {
+                id: 'ducati-panigale-v4',
+                name: 'Ducati Panigale V4 S',
+                brand: 'Ducati',
+                category: 'Sports',
+                price: 3348000,
+                engineCc: 1103,
+                powerBhp: 212.5,
+                topSpeedKmh: 315,
+                mileageKmpl: 12,
+                isSuperbike: true,
+                imageEmoji: '🏎️',
+                bgColor: 'from-red-900/70 to-slate-900',
+                features: ['Desmosedici Stradale V4', 'Ohlins Electronic Suspension', 'MotoGP Aerodynamic Package', 'Carbon Components']
+            }
+        ];
+
+        /* Dealerships Mock Data generator according to location */
+        const cityDealerships = {
+            'Jaipur': [
+                { name: 'Apex Motors & Superbike World', address: 'Tonk Road, near Gopalpura Flyover, Jaipur', rating: 4.8, offer: '₹12,000 Cash Discount + Free Helmet', phone: '+91 98290 11223' },
+                { name: 'Pink City Superbikes & Multi-Brand', address: 'MI Road, Opposite Panch Batti, Jaipur', rating: 4.7, offer: 'Free 1st Year RSA + Extended Warranty', phone: '+91 98291 44556' },
+                { name: 'Royal Rajputana Showroom', address: 'VKIA Road No 14, Jaipur', rating: 4.6, offer: '0% Processing Fee on Bank Loan', phone: '+91 98292 77889' }
+            ],
+            'Delhi NCR': [
+                { name: 'Capital Two Wheelers & Superbikes', address: 'Connaught Place / Ring Road, New Delhi', rating: 4.9, offer: '₹20,000 Exchange Bonus + Free Riding Jacket', phone: '+91 98110 33445' },
+                { name: 'Gurugram Speed Superbike Hub', address: 'Golf Course Road, Sector 54, Gurugram', rating: 4.8, offer: 'Free Ceramic Coating + ₹15K Store Voucher', phone: '+91 98101 22334' }
+            ],
+            'Mumbai': [
+                { name: 'Metro Superbikes & Showroom', address: 'Andheri West / Link Road, Mumbai', rating: 4.8, offer: 'Instant Cashback up to ₹25,000', phone: '+91 98200 55667' },
+                { name: 'South Bombay Superbike Gallery', address: 'Worli Sea Face, Mumbai', rating: 4.9, offer: 'Complementary Track Day Access + Helmet', phone: '+91 98201 88990' }
+            ],
+            'Bangalore': [
+                { name: 'Silicon City Moto World', address: 'Indiranagar 100ft Road, Bangalore', rating: 4.9, offer: 'Free Riding Gear Kit worth ₹18,000', phone: '+91 98450 12345' },
+                { name: 'Koramangala Speed Zone', address: 'Koramangala 5th Block, Bangalore', rating: 4.7, offer: '0% Downpayment Financing Scheme', phone: '+91 98451 67890' }
+            ]
+        };
+
+        const categories = ['All', 'Commuter', 'Street', 'Sports', 'Cruiser', 'Roadster'];
+        
+        /* State Variables */
+        let selectedCategory = 'All';
+        let currentBudget = 1200000; // 12 Lakhs default
+        let selectedCity = 'Jaipur';
+        let compareList = []; // bike IDs
+
+        window.onload = function() {
+            renderCategoryPills();
+            applyFilters();
+        };
+
+        function renderCategoryPills() {
+            const container = document.getElementById('categoryContainer');
+            container.innerHTML = '';
+
+            categories.forEach(cat => {
+                const isSelected = selectedCategory === cat;
+                const btn = document.createElement('button');
+                btn.className = `px-3 py-1.5 rounded-xl text-xs font-semibold transition border ${
+                    isSelected 
+                        ? 'bg-rose-600 text-white border-rose-500 shadow-md shadow-rose-600/30' 
+                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-600'
+                }`;
+                btn.innerText = cat;
+                btn.onclick = () => {
+                    selectedCategory = cat;
+                    renderCategoryPills();
+                    applyFilters();
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function onBudgetChange() {
+            const slider = document.getElementById('budgetRange');
+            currentBudget = parseInt(slider.value);
+            
+            // Format Budget display in Lakhs / Thousands
+            const display = document.getElementById('budgetDisplay');
+            if (currentBudget >= 100000) {
+                display.innerText = `₹ ${(currentBudget / 100000).toFixed(2)} Lakhs`;
+            } else {
+                display.innerText = `₹ ${(currentBudget / 1000).toFixed(0)} Thousand`;
+            }
+
+            applyFilters();
+        }
+
+        function updateLocation() {
+            selectedCity = document.getElementById('locationSelect').value;
+        }
+
+        function detectGPSLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        alert("GPS Location detected! Setting nearest dealership network to " + selectedCity);
+                    },
+                    (err) => {
+                        alert("GPS access denied or unavailable. You can manually select your city.");
+                    }
+                );
+            } else {
+                alert("Geolocation is not supported by your browser.");
+            }
+        }
+
+        function applyFilters() {
+            const superbikeOnly = document.getElementById('superbikeOnly').checked;
+            const highMileage = document.getElementById('highMileage').checked;
+            const sortBy = document.getElementById('sortBySelect').value;
+
+            // Filter bikes within budget
+            let filtered = bikesDatabase.filter(bike => {
+                if (bike.price > currentBudget) return false;
+                if (selectedCategory !== 'All' && bike.category !== selectedCategory) return false;
+                if (superbikeOnly && !bike.isSuperbike) return false;
+                if (highMileage && bike.mileageKmpl < 35) return false;
+                return true;
+            });
+
+            // Sorting logic
+            if (sortBy === 'price-asc') filtered.sort((a, b) => a.price - b.price);
+            if (sortBy === 'price-desc') filtered.sort((a, b) => b.price - a.price);
+            if (sortBy === 'power-desc') filtered.sort((a, b) => b.powerBhp - a.powerBhp);
+            if (sortBy === 'mileage-desc') filtered.sort((a, b) => b.mileageKmpl - a.mileageKmpl);
+
+            document.getElementById('resultCountBadge').innerText = `Showing ${filtered.length} bikes in budget`;
+
+            renderBikesGrid(filtered);
+            updateAIRecommendations(filtered);
+        }
+
+        function renderBikesGrid(bikes) {
+            const grid = document.getElementById('bikesGrid');
+            grid.innerHTML = '';
+
+            if (bikes.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12 bg-slate-900/50 border border-slate-800 rounded-2xl">
+                        <i class="fa-solid fa-motorcycle text-4xl text-slate-600 mb-3 block"></i>
+                        <h3 class="text-base font-bold text-slate-300">Is budget / filter me koi bike nahi mili.</h3>
+                        <p class="text-xs text-slate-500 mt-1">Aap slider ko drag karke budget badha sakte hain ya filter change kar sakte hain.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            bikes.forEach(bike => {
+                const isCompared = compareList.includes(bike.id);
+                const formattedPrice = bike.price >= 100000 
+                    ? `₹ ${(bike.price / 100000).toFixed(2)} Lakhs` 
+                    : `₹ ${bike.price.toLocaleString('en-IN')}`;
+
+                const cardHtml = `
+                    <div class="gradient-card border ${bike.isSuperbike ? 'border-cyan-500/40 hover:border-cyan-400' : 'border-slate-800 hover:border-slate-700'} rounded-2xl p-5 flex flex-col justify-between transition-all duration-200 relative group">
+                        
+                        ${bike.isSuperbike ? `
+                            <span class="absolute top-3 right-3 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <i class="fa-solid fa-bolt text-xs"></i> Superbike
+                            </span>
+                        ` : ''}
+
+                        <div>
+                            <!-- Header & Image Emoji Badge -->
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-2xl shrink-0 shadow-inner">
+                                    ${bike.imageEmoji}
+                                </div>
+                                <div>
+                                    <span class="text-[11px] font-semibold text-rose-400 uppercase tracking-wider">${bike.brand} • ${bike.category}</span>
+                                    <h3 class="font-bold text-base text-white leading-snug">${bike.name}</h3>
+                                </div>
+                            </div>
+
+                            <!-- Specs Grid -->
+                            <div class="grid grid-cols-3 gap-2 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 mb-4 text-center">
+                                <div>
+                                    <span class="text-[10px] text-slate-400 block">Engine</span>
+                                    <span class="text-xs font-bold text-slate-200">${bike.engineCc} cc</span>
+                                </div>
+                                <div>
+                                    <span class="text-[10px] text-slate-400 block">Power</span>
+                                    <span class="text-xs font-bold text-amber-400">${bike.powerBhp} BHP</span>
+                                </div>
+                                <div>
+                                    <span class="text-[10px] text-slate-400 block">Mileage</span>
+                                    <span class="text-xs font-bold text-emerald-400">${bike.mileageKmpl} kmpl</span>
+                                </div>
+                            </div>
+
+                            <!-- Features list -->
+                            <ul class="text-[11px] text-slate-400 space-y-1 mb-4">
+                                ${bike.features.slice(0, 3).map(f => `<li class="flex items-center gap-1.5"><i class="fa-solid fa-check text-rose-500 text-[9px]"></i> ${f}</li>`).join('')}
+                            </ul>
+                        </div>
+
+                        <!-- Price & Action Footer -->
+                        <div class="border-t border-slate-800/80 pt-3 flex flex-col space-y-2">
+                            <div class="flex items-baseline justify-between">
+                                <span class="text-xs text-slate-400">Ex-Showroom:</span>
+                                <span class="text-base font-extrabold text-white">${formattedPrice}</span>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 pt-1">
+                                <button onclick="toggleCompare('${bike.id}')" class="w-full text-xs py-2 rounded-xl border ${isCompared ? 'bg-rose-500/20 text-rose-300 border-rose-500' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'} font-semibold transition flex items-center justify-center gap-1">
+                                    <i class="fa-solid ${isCompared ? 'fa-check' : 'fa-plus'} text-[10px]"></i> ${isCompared ? 'Added' : 'Compare'}
+                                </button>
+                                <button onclick="openDealerModal('${bike.id}')" class="w-full bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold py-2 rounded-xl transition flex items-center justify-center gap-1 shadow-lg shadow-rose-600/20">
+                                    <i class="fa-solid fa-shop text-[10px]"></i> Dealer Price
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                `;
+                grid.innerHTML += cardHtml;
+            });
+        }
+
+        function updateAIRecommendations(availableBikes) {
+            if (availableBikes.length === 0) {
+                document.getElementById('bestOverallTitle').innerText = 'No Bikes in Budget';
+                document.getElementById('bestOverallDesc').innerText = 'Budget slider ko aage karein.';
+                document.getElementById('bestSuperbikeTitle').innerText = 'No Superbike in Budget';
+                document.getElementById('bestSuperbikeDesc').innerText = 'Budget badhakar dekhien.';
+                return;
+            }
+
+            // 1. Best Overall Value (Best power to price or highest rated commuter/sports)
+            let overall = [...availableBikes].sort((a, b) => (b.powerBhp / (b.price/100000)) - (a.powerBhp / (a.price/100000)))[0];
+
+            // 2. Best Superbike in budget
+            let superbikes = availableBikes.filter(b => b.isSuperbike);
+            let topSuperbike = superbikes.sort((a, b) => b.powerBhp - a.powerBhp)[0];
+
+            // Populate Best Overall
+            if (overall) {
+                document.getElementById('bestOverallTitle').innerText = `${overall.name}`;
+                document.getElementById('overallCategoryBadge').innerText = `${overall.category} (${overall.engineCc}cc)`;
+                document.getElementById('bestOverallDesc').innerText = `${overall.mileageKmpl} kmpl mileage ke saath, ye aapke ₹ ${(currentBudget/100000).toFixed(1)} Lakh budget me sabse value-for-money choice hai.`;
+                document.getElementById('bestOverallPrice').innerText = overall.price >= 100000 ? `₹ ${(overall.price/100000).toFixed(2)} Lakhs` : `₹ ${overall.price.toLocaleString('en-IN')}`;
+                document.getElementById('bestOverallBtn').onclick = () => openDealerModal(overall.id);
+            }
+
+            // Populate Best Superbike
+            if (topSuperbike) {
+                document.getElementById('bestSuperbikeTitle').innerText = `${topSuperbike.name}`;
+                document.getElementById('superbikeCategoryBadge').innerText = `${topSuperbike.category} Superbike`;
+                document.getElementById('bestSuperbikeDesc').innerText = `Pure performance & speed monster! Powerful ${topSuperbike.powerBhp} BHP engine with unmatched acceleration.`;
+                document.getElementById('bestSuperbikeSpecs').innerText = `Top Speed: ~${topSuperbike.topSpeedKmh} km/h | ${topSuperbike.powerBhp} BHP`;
+                document.getElementById('bestSuperbikeBtn').onclick = () => openDealerModal(topSuperbike.id);
+            } else {
+                document.getElementById('bestSuperbikeTitle').innerText = `₹ 3.0+ Lakhs me Superbikes Start Hoti hain`;
+                document.getElementById('superbikeCategoryBadge').innerText = `Commuter Segment`;
+                document.getElementById('bestSuperbikeDesc').innerText = `Aapke budget ko ₹3 Lakhs ya usse zyada set karein to Duke 390, Ninja, ya Z900 jaisi superbikes dikhayengi.`;
+                document.getElementById('bestSuperbikeSpecs').innerText = `N/A in current budget`;
+                document.getElementById('bestSuperbikeBtn').onclick = () => {
+                    document.getElementById('budgetRange').value = 350000;
+                    onBudgetChange();
+                };
+            }
+        }
+
+        function openDealerModal(bikeId) {
+            const bike = bikesDatabase.find(b => b.id === bikeId);
+            if (!bike) return;
+
+            document.getElementById('dealerModalBikeName').innerText = `${bike.name} - Nearby Best Price Deals`;
+            document.getElementById('dealerModalLocation').innerText = `${selectedCity} & nearby authorized dealer network`;
+
+            // Calculate estimated On-Road Price (approx 12-15% RTO + Insurance)
+            const rtoInsuranceEst = Math.round(bike.price * 0.14);
+            const onRoadTotal = bike.price + rtoInsuranceEst;
+
+            document.getElementById('modalExShowroom').innerText = bike.price >= 100000 ? `₹ ${(bike.price/100000).toFixed(2)} Lakhs` : `₹ ${bike.price.toLocaleString('en-IN')}`;
+            document.getElementById('modalRTOInsurance').innerText = `+ ₹ ${rtoInsuranceEst.toLocaleString('en-IN')}`;
+            document.getElementById('modalOnRoad').innerText = `~ ₹ ${onRoadTotal.toLocaleString('en-IN')}`;
+
+            // Get city dealerships
+            const dealers = cityDealerships[selectedCity] || cityDealerships['Jaipur'];
+            const container = document.getElementById('dealerListContainer');
+            container.innerHTML = '';
+
+            dealers.forEach((dealer, idx) => {
+                // Generate slight price variance / discounts per dealer
+                const discountAmount = (idx + 1) * 3500;
+                const dealerOnRoadQuote = onRoadTotal - discountAmount;
+
+                const dealerCard = `
+                    <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-700 transition">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <h4 class="font-bold text-sm text-white">${dealer.name}</h4>
+                                <span class="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/30 flex items-center gap-1">
+                                    <i class="fa-solid fa-star text-[9px]"></i> ${dealer.rating}
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-400 mb-2"><i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>${dealer.address}</p>
+                            
+                            <div class="inline-block bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs px-2.5 py-1 rounded-lg font-medium">
+                                <i class="fa-solid fa-tag mr-1"></i> Offer: ${dealer.offer}
+                            </div>
+                        </div>
+
+                        <div class="text-left sm:text-right border-t sm:border-t-0 border-slate-800 pt-2 sm:pt-0 shrink-0">
+                            <span class="text-[10px] text-slate-400 block">Best Dealer On-Road Quote:</span>
+                            <span class="text-base font-extrabold text-emerald-400 block">₹ ${dealerOnRoadQuote.toLocaleString('en-IN')}</span>
+                            <a href="tel:${dealer.phone}" class="mt-2 inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-lg border border-slate-700 font-semibold transition">
+                                <i class="fa-solid fa-phone text-rose-400 text-[10px]"></i> Call Dealer
+                            </a>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += dealerCard;
+            });
+
+            document.getElementById('dealerModal').classList.remove('hidden');
+        }
+
+        function closeDealerModal() {
+            document.getElementById('dealerModal').classList.add('hidden');
+        }
+
+        function toggleCompare(bikeId) {
+            const index = compareList.indexOf(bikeId);
+            if (index > -1) {
+                compareList.splice(index, 1);
+            } else {
+                if (compareList.length >= 3) {
+                    alert("Aap ek baar me maximum 3 bikes compare kar sakte hain.");
+                    return;
+                }
+                compareList.push(bikeId);
+            }
+
+            renderCompareBar();
+            applyFilters();
+        }
+
+        function clearCompare() {
+            compareList = [];
+            renderCompareBar();
+            applyFilters();
+        }
+
+        function renderCompareBar() {
+            const bar = document.getElementById('compareBar');
+            const badges = document.getElementById('compareBadges');
+
+            if (compareList.length === 0) {
+                bar.classList.add('hidden');
+                return;
+            }
+
+            bar.classList.remove('hidden');
+            badges.innerHTML = `<span class="text-xs text-slate-400 font-semibold uppercase shrink-0">Compare (${compareList.length}/3):</span>`;
+
+            compareList.forEach(id => {
+                const bike = bikesDatabase.find(b => b.id === id);
+                if (bike) {
+                    const badge = document.createElement('div');
+                    badge.className = 'bg-slate-800 border border-slate-700 text-slate-200 text-xs px-2.5 py-1 rounded-lg flex items-center gap-1.5 shrink-0 font-medium';
+                    badge.innerHTML = `
+                        <span>${bike.name}</span>
+                        <i onclick="toggleCompare('${bike.id}')" class="fa-solid fa-xmark text-slate-400 hover:text-white cursor-pointer text-xs ml-1"></i>
+                    `;
+                    badges.appendChild(badge);
+                }
+            });
+        }
+
+        function openCompareModal() {
+            if (compareList.length < 2) {
+                alert("Kam se kam 2 bikes select karein side-by-side comparison ke liye.");
+                return;
+            }
+
+            const selectedBikes = compareList.map(id => bikesDatabase.find(b => b.id === id));
+            const container = document.getElementById('compareMatrixContainer');
+
+            let matrixHtml = `
+                <table class="w-full text-left text-xs text-slate-300 border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-800 bg-slate-950/60">
+                            <th class="p-3 font-bold text-slate-400 uppercase">Specification</th>
+                            ${selectedBikes.map(b => `<th class="p-3 font-bold text-white text-sm min-w-[160px]">${b.name}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60">
+                        <tr>
+                            <td class="p-3 text-slate-400 font-medium">Ex-Showroom Price</td>
+                            ${selectedBikes.map(b => `<td class="p-3 font-extrabold text-amber-400 text-sm">₹ ${b.price.toLocaleString('en-IN')}</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td class="p-3 text-slate-400 font-medium">Category / Type</td>
+                            ${selectedBikes.map(b => `<td class="p-3 font-semibold text-slate-200">${b.category} ${b.isSuperbike ? '(Superbike)' : ''}</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td class="p-3 text-slate-400 font-medium">Engine Capacity</td>
+                            ${selectedBikes.map(b => `<td class="p-3 font-semibold text-slate-200">${b.engineCc} cc</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td class="p-3 text-slate-400 font-medium">Max Power</td>
+                            ${selectedBikes.map(b => `<td class="p-3 font-semibold text-cyan-300">${b.powerBhp} BHP</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td class="p-3 text-slate-400 font-medium">Top Speed</td>
+                            ${selectedBikes.map(b => `<td class="p-3 font-semibold text-rose-400">~ ${b.topSpeedKmh} km/h</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td class="p-3 text-slate-400 font-medium">Fuel Mileage</td>
+                            ${selectedBikes.map(b => `<td class="p-3 font-semibold text-emerald-400">${b.mileageKmpl} kmpl</td>`).join('')}
+                        </tr>
+                        <tr>
+                            <td class="p-3 text-slate-400 font-medium">Key Features</td>
+                            ${selectedBikes.map(b => `
+                                <td class="p-3 text-slate-300">
+                                    <ul class="space-y-1">
+                                        ${b.features.map(f => `<li class="flex items-center gap-1"><i class="fa-solid fa-angle-right text-rose-500 text-[8px]"></i> ${f}</li>`).join('')}
+                                    </ul>
+                                </td>
+                            `).join('')}
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = matrixHtml;
+            document.getElementById('compareModal').classList.remove('hidden');
+        }
+
+        function closeCompareModal() {
+            document.getElementById('compareModal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
